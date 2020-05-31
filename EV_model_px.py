@@ -18,13 +18,13 @@ K = range(1, m + 1)
 T = range(1, r + 1)
 L = range(1, m + 1)
 
-vp = preflist(n, m,r,m)
+vp, ld = preflist(n, m,r,m)
 delta = {k: 10 for k in K}  # limit on the individual size of the charging stations
 gamma = {k: 50 for k in K}  # capacity of individual charging stations
 c = {k: rnd.uniform(0, 1) for k in K}  # installation cost of  individual charging stations
 print(c)
 v = {(i, k, t, l): vp[i,k,t,l] for i in I for k in K for t in T for l in L}  # preference list
-l_d = {(i, k): rnd.uniform(0, 1)*1 for i in I for k in K}  # lambda of the follower problem
+l_d = {(i, k): ld[i,k] for i in I for k in K}  # lambda of the follower problem
 
 # big M's
 M = 100000
