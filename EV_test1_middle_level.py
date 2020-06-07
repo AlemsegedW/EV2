@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 
-def solve_test1_middle_level(n, m, r, s, f_cost, p_list, p_u, delta_k, beta, gamma_k, vp, ld, x_n, y_n, x_m, y_m, d):
+def solve_test1_middle_level(n, m, r, s, f_cost, p_list, p_u, delta_k, beta, gamma_k, vp, ld, x_n, y_n, x_m, y_m, d,a,b):
     I = range(1, n + 1)
     K = range(1, m + 1)
     T = range(1, r + 1)
@@ -16,8 +16,8 @@ def solve_test1_middle_level(n, m, r, s, f_cost, p_list, p_u, delta_k, beta, gam
     beta_i = np.zeros(n + 1)
     alpha = np.zeros(n + 1)
     for i in I:
-        beta_i[i] =0
-        alpha[i] = 1
+        beta_i[i] =b
+        alpha[i] = a
         # for k in K:
         # for t in T:
         #   d[i, k, t] = ld[i, k]
@@ -60,7 +60,7 @@ def solve_test1_middle_level(n, m, r, s, f_cost, p_list, p_u, delta_k, beta, gam
     con71 = {
         k: prob.add_constraint(ct=z[k] - prob.sum(x[i, k, t] for i in I for t in T) <= 0, ctname="con71_{0}".format(k))
         for k in K}
-    con72 = {(k, t): prob.add_constraint(ct=p[k, t] - z[k] * p_u <= 0, ctname="con72_{0}_{1}".format(k, t))
+    con72 = {(k, t): prob.add_constraint(ct=p[k, t] - prob.sum(x[i, k, t] for i in I for t in T) * p_u <= 0, ctname="con72_{0}_{1}".format(k, t))
              for k in K for t in T}
     con7b = {k: prob.add_constraint(ct=y[k] - delta[k] * z[k] <= 0, ctname="con7b_{0}".format(k)) for k in K}
     con7c = prob.add_constraint(ct=prob.sum(c[k] * y[k] for k in K) <= beta, ctname="con7c")
@@ -151,6 +151,8 @@ def solve_test1_middle_level(n, m, r, s, f_cost, p_list, p_u, delta_k, beta, gam
     p_val = sol.get_value_dict(p)
     z_val = sol.get_value_dict(z)
     v_val = sol.get_value_dict(v)
+
+
     [print("x_{0}_{1}_{2} = %d".format(i, k, t) % x_val[i, k, t]) for i in I for k in K for t in T if
      x_val[i, k, t] != 0]
     [print("y_{0}=%d".format(k) % y_val[k]) for k in K if y_val[k] != 0]
@@ -179,8 +181,7 @@ def solve_test1_middle_level(n, m, r, s, f_cost, p_list, p_u, delta_k, beta, gam
             tm = np.nonzero(vi)
             v_it[0, l] = tm[0]
             v_it[1, l] = tm[1]
-            print(v_it)
-        #plt.figure(figsize=(10, 5))
+            #print(v_it)
 
 
         plt.annotate('$%d$' % i, (x_n[i] - .02, y_n[i] + 0.025))
