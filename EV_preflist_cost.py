@@ -2,21 +2,25 @@ import cplex
 import docplex.mp.model as cpx
 import numpy as np
 from pref_list import preflist
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
+# imgplot = plt.imshow(img)
+# plt.show()
 # import matplotlib.pyplot as plt
 
 # follower_cost
 f_cost = 1
-# follower_cost
-p_list = 1
+# follower_list
+p_list = 1000
 # upper bound on p
-p_u = 10_0000
+p_u = 10
 rnd = np.random
 # problem data
-n = 30  # number of users
-m = 10  # number of charging station candidates
+n = 10  # number of users
+m = 3  # number of charging station candidates
 r = 3  # number of time slats
-s = 1  # number of preflist
+s = 3  # number of preflist
 beta = m  # Budget
 
 # generate sets
@@ -25,9 +29,9 @@ K = range(1, m + 1)
 T = range(1, r + 1)
 L = range(1, s + 1)
 
-vp, ld = preflist(n, m, r, s)
+vp, ld, x_n, y_n, x_m, y_m = preflist(n, m, r, s)
 delta = {k: 10 for k in K}  # limit on the individual size of the charging stations
-gamma = {k: 5 for k in K}  # capacity of individual charging stations
+gamma = {k: 3 for k in K}  # capacity of individual charging stations
 c = {k: rnd.uniform(.6, 1) for k in K}  # installation cost of  individual charging stations
 # print(c)
 v = {(i, k, t, l): vp[i, k, t, l] for i in I for k in K for t in T for l in L}  # preference list
@@ -111,7 +115,26 @@ prob.maximize(objective)
 s = prob.solve(log_output=True)
 prob.print_information()
 print(prob.get_solve_status())
-#prob.print_solution()
-#print(prob.get_constraint_by_name("con7b"))
-print(prob.solution)
-#print(s)
+# prob.print_solution()
+# print(prob.get_constraint_by_name("con7b"))
+#print(prob.solution)
+print(s.get_objective_value())
+# print(s.is_feasible_solution(tolerance=1e-06, silent=True))
+# print(s.is_valid_solution(tolerance=1e-06, silent=True))
+x_val = s.get_value_dict(x)
+y_val = s.get_value_dict(y)
+p_val = s.get_value_dict(p)
+z_val = s.get_value_dict(z)
+
+[ print("x_{0}_{1}_{2} = %d".format(i,k,t) % x_val[i,k,t] ) for i in I for k in K for t in T if x_val[i,k,t] == 1]
+[ print("y_{0}=%d".format(k) % y_val[k]  ) for k in K if y_val[k] != 0]
+[ print("z_{0}=%d".format(k) % z_val[k]  ) for k in K if z_val[k] != 0]
+[ print("p_{0}_{1} = %f".format(k,t) % p_val[k,t] ) for k in K for t in T if p_val[k,t] != 0]
+
+# print(s)
+img = mpimg.imread('user_cs.png')
+
+[ plt.annotate("x_{0}_{1}_{2}".format(i,k,t), (x_n[i] - 0.02, y_n[i] - 0.04))
+  for i in I for k in K for t in T if x_val[i,k,t] == 1]
+[ plt.annotate("y_{0} = %d".format(k) % y[k], (x_m[k] - 0.02, y_m[k] - 0.04), c = 'r') for k in K if y_val[k] != 0]
+plt.show()

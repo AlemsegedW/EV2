@@ -11,19 +11,21 @@ import matplotlib.image as mpimg
 # import matplotlib.pyplot as plt
 
 # follower_cost
-f_cost = 1
+f_cost = 0
 # follower_list
-p_list =2
+p_list = 1
 # upper bound on p
-p_u = 1
+p_u = 10
 rnd = np.random
 # problem data
 n = 10  # number of users
-m = 5  # number of charging station candidates
+m = 8 # number of charging station candidates
 r = 3  # number of time slats
-s = 2  # number of preflist
-beta = m  # Budget
-
+s = 4  # number of preflist
+delta_k = 5 # limit on the individual size of the charging stations
+beta = np.ceil(delta_k*m/(2*r))  # Budget
+gamma_k = np.ceil(delta_k/delta_k)
+print("beta = %d, gamma = gamma_k =%d", beta, gamma_k)
 # generate sets
 I = range(1, n + 1)
 K = range(1, m + 1)
@@ -31,17 +33,18 @@ T = range(1, r + 1)
 L = range(1, s + 1)
 
 vp, ld, x_n, y_n, x_m, y_m = preflist(n, m, r, s)
-delta = {k: 2 for k in K}  # limit on the individual size of the charging stations
-gamma = {k: 2 for k in K}  # capacity of individual charging stations
-c = {k: rnd.uniform(.6, 1) for k in K}  # installation cost of  individual charging stations
+delta = {k: delta_k for k in K}  # limit on the individual size of the charging stations
+gamma = {k: gamma_k for k in K}  # capacity of individual charging stations
+# c = {k: rnd.uniform(.6, 1) for k in K}  # installation cost of  individual charging stations
+c = {k: 1 for k in K}  # installation cost of  individual charging stations
 # print(c)
 v = {(i, k, t, l): vp[i, k, t, l] for i in I for k in K for t in T for l in L}  # preference list
-l_d = {(i, k): ld[i, k]*1 for i in I for k in K}  # lambda of the follower problem
+l_d = {(i, k): ld[i, k] * 0 for i in I for k in K}  # lambda of the follower problem
 
 # big M's
-M = 1000
-M5 = 1000
-M6 = 1000
+M = 100
+M5 = 100
+M6 = 100
 
 prob = cpx.Model(name="EV Model")
 
@@ -67,7 +70,10 @@ rho = {i: prob.continuous_var(lb=-np.inf, ub=None, name="rho_{0}".format(i)) for
 u = {(k, t): prob.binary_var(name="u_{0}_{1}".format(k, t)) for k in K for t in T}
 
 # leader constraints
-# con70 = {(k, t): prob.add_constraint(ct=p[k, t] - z[k] * p_u <= 0, ctname="con70_{0}".format(k)) for k in K for t in T}
+con71 = {k: prob.add_constraint(ct=z[k] - prob.sum(x[i, k, t] for i in I for t in T) <= 0, ctname="con71_{0}".format(k))
+         for k in K}
+con72 = {(k, t): prob.add_constraint(ct=p[k, t] - z[k] * p_u <= 0, ctname="con72_{0}_{1}".format(k, t))
+         for k in K for t in T}
 con7b = {k: prob.add_constraint(ct=y[k] - delta[k] * z[k] <= 0, ctname="con7b_{0}".format(k)) for k in K}
 con7c = prob.add_constraint(ct=prob.sum(c[k] * y[k] for k in K) - beta <= 0, ctname="con7c")
 
@@ -112,13 +118,13 @@ con7m = {(i, k, t): prob.add_constraint(
 # ctname="con7s_{0}_{1}_{2}".format(i, k, t)) for i in I for k in K for t in T}
 # objective function
 objective = prob.sum(x[i, k, t] * p[k, t] for i in I for k in K for t in T) - 0 * prob.sum(
-    x[i, k, t] for i in I for k in K for t in T) - 0*prob.sum(c[k] * y[k] for k in K)
+    x[i, k, t] for i in I for k in K for t in T) - 0 * prob.sum(c[k] * y[k] for k in K)
 
 prob.maximize(objective)
 prob.print_information()
 # breakpoint()
-prob.parameters.mip.tolerances.mipgap = 0.05
-prob.parameters.timelimit = 500
+#prob.parameters.mip.tolerances.mipgap = 0.001
+#prob.parameters.timelimit = 500
 s = prob.solve(log_output=True)
 print(prob.get_solve_status())
 # prob.print_solution()
@@ -137,9 +143,9 @@ z_val = s.get_value_dict(z)
 
 # plt.figure(figsize=(10, 5))
 img = mpimg.imread('user_cs.png')
-[plt.annotate("x_{0}_{1}_{2}".format(i, k, t), (x_n[i] - 0.02, y_n[i] - 0.4))
+[plt.annotate("x_{0}_{1}_{2}".format(i, k, t), (x_n[i] - 0.002, y_n[i] - 0.04))
  for i in I for k in K for t in T if x_val[i, k, t] == 1]
-[plt.annotate("y_{0} = %d".format(k) % y[k], (x_m[k] - 0.02, y_m[k] - 0.4), c='r') for k in K if y_val[k] != 0]
+[plt.annotate("y_{0} = %d".format(k) % y[k], (x_m[k] - 0.002, y_m[k] - 0.04), c='r') for k in K if y_val[k] != 0]
 # plt.axis('equal')
 plt.savefig('user_cs_PX')
 plt.show(block=False)
