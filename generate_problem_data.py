@@ -72,10 +72,11 @@ def problem_data(n, m, r, s):
         # plt.show(block=False)
         # plt.ioff()
         # plt.show()
+    print(ld)
     ld = ld / np.max(ld)
-    d = d/np.max(d)
+    d = d/1
     return vp, ld, x_n, y_n, x_m, y_m, d
 
 
 if __name__ == "__main__":
-    preflist(10, 5, 3, 3)
+    problem_data(10, 5, 3, 3)
